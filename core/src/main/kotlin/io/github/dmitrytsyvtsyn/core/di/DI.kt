@@ -2,32 +2,32 @@ package io.github.dmitrytsyvtsyn.core.di
 
 import kotlin.reflect.KClass
 
-interface Provider<T> {
-    fun provide() : T
+interface Factory<T> {
+    fun create() : T
 }
 
 object DI {
 
-    val map: MutableMap<KClass<*>, Provider<*>> = mutableMapOf()
+    val map: MutableMap<KClass<*>, Factory<*>> = mutableMapOf()
 
     @Suppress("UNCHECKED_CAST")
     inline fun <reified T> instance(): T {
-        return map[T::class]?.provide() as T
+        return map[T::class]?.create() as T
     }
 
     inline fun <reified T : Any> factory(crossinline dependencyProducer: () -> T) {
-        map[T::class] = object : Provider<T> {
-            override fun provide(): T {
+        map[T::class] = object : Factory<T> {
+            override fun create(): T {
                 return dependencyProducer.invoke()
             }
         }
     }
 
     inline fun <reified T : Any> singleton(crossinline dependencyProducer: () -> T) {
-        map[T::class] = object : Provider<T> {
+        map[T::class] = object : Factory<T> {
             private var _dependency: T? = null
 
-            override fun provide(): T {
+            override fun create(): T {
                 _dependency?.let { return it }
                 synchronized(this) {
                     _dependency?.let { return it }
