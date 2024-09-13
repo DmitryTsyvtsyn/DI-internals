@@ -2,7 +2,6 @@ package io.github.dmitrytsyvtsyn.post_detail.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.dmitrytsyvtsyn.core.datetime.DatetimeExtensions
 import io.github.dmitrytsyvtsyn.core.di.DI
 import io.github.dmitrytsyvtsyn.core.model.PostModel
 import io.github.dmitrytsyvtsyn.core.model.StringResource
@@ -11,6 +10,8 @@ import io.github.dmitrytsyvtsyn.core.usecases.PostInsertUseCase
 import io.github.dmitrytsyvtsyn.post_detail.R
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 internal class PostDetailViewModel : ViewModel() {
@@ -19,10 +20,10 @@ internal class PostDetailViewModel : ViewModel() {
     private val fetchByIdUseCase: PostFetchByIdUseCase = DI.instance()
 
     private val _state = MutableStateFlow(PostDetailState())
-    val state = _state
+    val state = _state.asStateFlow()
 
     private val _effect = MutableSharedFlow<PostDetailEffect>()
-    val effect = _effect
+    val effect = _effect.asSharedFlow()
 
     fun handleEvent(event: PostDetailEvent) {
         when(event) {

@@ -10,6 +10,8 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 internal class PostListViewModel : ViewModel() {
@@ -18,10 +20,10 @@ internal class PostListViewModel : ViewModel() {
     private val fetchDeleteUseCase: PostDeleteUseCase = DI.instance()
 
     private val _state = MutableStateFlow(persistentListOf<PostModel>())
-    val state = _state
+    val state = _state.asStateFlow()
 
     private val _effect = MutableSharedFlow<PostListEffect>()
-    val effect = _effect
+    val effect = _effect.asSharedFlow()
 
     fun handleEvent(event: PostListEvent) {
         when(event) {
