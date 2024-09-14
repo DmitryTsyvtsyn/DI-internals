@@ -132,3 +132,8 @@ class PostListViewModel : ViewModel() {
 
 }
 ```
+
+### Дополнительные материалы
+
+<a href="https://habr.com/en/articles/843258/"><img src="https://github.com/user-attachments/assets/6f25701f-526a-409c-b1bc-efce7fe5107a" width="350px" /></a>
+
