@@ -13,7 +13,6 @@ class Container {
     /*
     в качестве ключей может быть что угодно, KClass, String и тд, 
     главное иметь возможность получить зависимость когда это нужно
-    и при этом не страдать
     */
     val map = mutableMapOf<KClass<*>, Factory<*>>() 
 }
@@ -21,9 +20,9 @@ class Container {
 
 Несколько преимуществ такого решения:
 
-1) Простота - ничего лишнего, простая коллекция с фабриками
-2) Масштабируемость - компоненты можно объединить в один общий граф и использовать во многомодульных проектах
-3) Удобство и расширяемость - компоненты можно положить куда угодно, во Fragment, в Activity, в Application и тд, всё зависит от вашей задачи
+1) Простота - ничего лишнего, простой контейнер с фабриками
+2) Масштабируемость - DI контейнеры можно объединить в один общий граф и использовать в многомодульных проектах
+3) Удобство и расширяемость - контейнеры можно положить куда угодно, в Fragment, в Activity, в Application и тд, всё зависит от вашей задачи
 
 Я решил сделать что-то похожее для лучшего понимания как всё устроено под капотом и написал вот такое простенькое решение:
 
@@ -32,7 +31,7 @@ interface Factory<T> {
     fun create() : T
 }
 
-// я не стал создавать отдельный класс для контейнера, а сразу положил всё в object
+// я не стал создавать отдельный класс для DI контейнера, а сразу положил всё в object
 object DI {
 
     // тут хранятся все фабрики, которые создают объекты когда они нужны
@@ -41,8 +40,8 @@ object DI {
     @Suppress("UNCHECKED_CAST")
     inline fun <reified T> instance(): T {
         /*
-        получаем объект, в качестве ключа выступает KClass для класса создаваемого объекта,
-        поэтому такое решение позволяет положить только один экземлпяр одного и того же класса
+        получаем объект, в качестве ключа выступает KClass для типа создаваемого объекта,
+        при таком решении можно положить только один экземлпяр одного и того же класса
         */
         return map[T::class]?.create() as T
     }
@@ -59,7 +58,7 @@ object DI {
     inline fun <reified T : Any> singleton(crossinline dependencyProducer: () -> T) {
         /*
         вариант фабрики, которая создаёт новый объект только при первом вызове create(), 
-        при последующих возвращает ранее созданый экземпляр
+        при последующих возвращает ранее созданный экземпляр
         */
         map[T::class] = object : Factory<T> {
             private var _dependency: T? = null
@@ -67,9 +66,8 @@ object DI {
             override fun create(): T {
                 /*
                 двойная проверка с synchronized() блоком нужна чтобы случайно 
-                не создать больше одного экземпляра объекта,
-                такое возможно если код будет выполняться на разных потоках,
-                при хорошем проектировании такой исход маловероятен
+                не создать больше одного экземпляра объекта при выполнении кода на
+                разных потоках (Double-checked locking)
                 */
                 _dependency?.let { return it }
                 synchronized(this) {
@@ -90,7 +88,19 @@ object DI {
 Небольшой пример как всё это используется (подробнее читайте исходники репозитория):
 
 ```
-// зависимости app модуля
+class App : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+
+        // строим граф зависимостей
+        DI.initAppDependencies(applicationContext)
+        DI.initCoreDependencies()
+    }
+
+}
+
+// app модуль
 fun DI.initAppDependencies(applicationContext: Context) {
     singleton {
         Room.databaseBuilder(
@@ -102,7 +112,7 @@ fun DI.initAppDependencies(applicationContext: Context) {
     factory { instance<AppDatabase>().postDao() }
 }
 
-// зависимости core модуля
+// core модуль
 fun DI.initCoreDependencies() {
     factory {
         PostDeleteUseCase(instance())
@@ -114,10 +124,7 @@ fun DI.initCoreDependencies() {
 
 class PostListViewModel : ViewModel() {
 
-    /*
-    вот так просто можно получить нужный экземпляр 
-    и не париться где лежит экземпляр базы данных и сколько он живет
-    */
+    // вот таким элегантным способом получаем нужную зависимость
     private val fetchAllUseCase: PostFetchAllUseCase = DI.instance()
     private val fetchDeleteUseCase: PostDeleteUseCase = DI.instance()
 
