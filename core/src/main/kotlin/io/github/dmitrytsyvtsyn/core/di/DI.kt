@@ -25,6 +25,7 @@ object DI {
 
     inline fun <reified T : Any> singleton(crossinline dependencyProducer: () -> T) {
         map[T::class] = object : Factory<T> {
+            @Volatile
             private var _dependency: T? = null
 
             override fun create(): T {
